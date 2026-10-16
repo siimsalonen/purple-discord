@@ -4134,20 +4134,25 @@ discord_process_dispatch(DiscordAccount *da, const gchar *type, JsonObject *data
 			purple_protocol_got_user_status(da->account, username, status, "message", user->game ? user->game : user->custom_status, NULL);
 			purple_protocol_got_user_idle(da->account, username, idle_since ? TRUE : FALSE, 0);
 
+			// Partial user objects omit unchanged fields
 			// Check avatar updates
-			const gchar *new_avatar = json_object_get_string_member(userdata, "avatar");
-			if (!purple_strequal(user->avatar, new_avatar)) {
-				g_free(user->avatar);
-				user->avatar = g_strdup(new_avatar);
-				discord_get_avatar(da, user, TRUE);
+			if (json_object_has_member(userdata, "avatar")) {
+				const gchar *new_avatar = json_object_get_string_member(userdata, "avatar");
+				if (!purple_strequal(user->avatar, new_avatar)) {
+					g_free(user->avatar);
+					user->avatar = g_strdup(new_avatar);
+					discord_get_avatar(da, user, TRUE);
+				}
 			}
 
 			// Handle global name change
-			const gchar *new_global_name = json_object_get_string_member(userdata, "global_name");
-			if (!purple_strequal(user->global_name, new_global_name)) {
-				g_free(user->global_name);
-				user->global_name = g_strdup(new_global_name);
-				purple_serv_got_alias(da->pc, username, user->global_name);
+			if (json_object_has_member(userdata, "global_name")) {
+				const gchar *new_global_name = json_object_get_string_member(userdata, "global_name");
+				if (!purple_strequal(user->global_name, new_global_name)) {
+					g_free(user->global_name);
+					user->global_name = g_strdup(new_global_name);
+					purple_serv_got_alias(da->pc, username, user->global_name);
+				}
 			}
 
 			// Handle a user being renamed
